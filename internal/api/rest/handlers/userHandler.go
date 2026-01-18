@@ -5,16 +5,19 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/musishere/Mustafa-Ecommerce-App/internal/api/rest"
+	"github.com/musishere/Mustafa-Ecommerce-App/internal/service"
 )
 
 type UserHandler struct {
-	//	svc UserService
+	svc service.UserService
 }
 
 func SetUpUserRoutes(restHandler *rest.RestHandler) {
 	app := restHandler.App
-
-	handler := UserHandler{}
+	svc := service.UserService{}
+	handler := UserHandler{
+		svc: svc,
+	}
 	//	public endpoints
 	app.Post("/register", handler.Register)
 	app.Post("/login", handler.Login)
@@ -33,6 +36,8 @@ func SetUpUserRoutes(restHandler *rest.RestHandler) {
 }
 
 func (handler *UserHandler) Register(ctx *fiber.Ctx) error {
+
+	handler.svc.Register()
 	return ctx.Status(http.StatusOK).JSON(&fiber.Map{"message": "User Registered!"})
 }
 func (handler *UserHandler) Login(ctx *fiber.Ctx) error {
