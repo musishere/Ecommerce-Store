@@ -26,9 +26,9 @@ func SetUpUserRoutes(restHandler *rest.RestHandler) {
 	app.Get("/profile", handler.GetProfile)
 	app.Post("/cart", handler.AddToCart)
 	app.Get("/cart", handler.GetCart)
-	app.Get("/order", handler.Login)
-	app.Get("/order/:id", handler.Login)
-	app.Post("/become-seller", handler.Login)
+	app.Get("/order", handler.GetOrders)
+	app.Get("/order/:id", handler.GetOrder)
+	app.Post("/become-seller", handler.BecomeSeller)
 
 }
 
@@ -66,4 +66,8 @@ func (handler *UserHandler) GetOrders(ctx *fiber.Ctx) error {
 func (handler *UserHandler) GetOrder(ctx *fiber.Ctx) error {
 
 	return ctx.Status(http.StatusOK).JSON(&fiber.Map{"message": "Getorder!"})
+}
+func (handler *UserHandler) BecomeSeller(ctx *fiber.Ctx) error {
+
+	return ctx.Status(http.StatusOK).JSON(&fiber.Map{"message": "Seller!"})
 }
