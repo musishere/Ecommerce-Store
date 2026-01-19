@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/musishere/Mustafa-Ecommerce-App/internal/api/rest"
+	"github.com/musishere/Mustafa-Ecommerce-App/internal/dto"
 	"github.com/musishere/Mustafa-Ecommerce-App/internal/service"
 )
 
@@ -36,10 +37,18 @@ func SetUpUserRoutes(restHandler *rest.RestHandler) {
 }
 
 func (handler *UserHandler) Register(ctx *fiber.Ctx) error {
-
-	handler.svc.Register()
-	return ctx.Status(http.StatusOK).JSON(&fiber.Map{"message": "User Registered!"})
+	user := dto.UserSignup{}
+	err := ctx.BodyParser(&user)
+	if err != nil {
+		ctx.Status(http.StatusBadRequest).JSON(fiber.Map{"message": "Please provide valid inputs"})
+	}
+	token, err := handler.svc.Register(user)
+	if err != nil {
+		ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+	}
+	return ctx.Status(http.StatusOK).JSON(&fiber.Map{"message": token})
 }
+
 func (handler *UserHandler) Login(ctx *fiber.Ctx) error {
 	return ctx.Status(http.StatusOK).JSON(&fiber.Map{"message": "User Login!"})
 }

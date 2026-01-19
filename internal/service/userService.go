@@ -1,12 +1,20 @@
 package service
 
-import "github.com/musishere/Mustafa-Ecommerce-App/internal/domain"
+import (
+	"log"
+
+	"github.com/musishere/Mustafa-Ecommerce-App/internal/domain"
+	"github.com/musishere/Mustafa-Ecommerce-App/internal/dto"
+)
 
 type UserService struct{}
 
-func (service UserService) Register(input interface{}) (string, error) {
-	return "", nil
+func (service UserService) Register(input dto.UserSignup) (string, error) {
+	log.Println(input)
+
+	return "THIS IS TOKEN FOR NOW", nil
 }
+
 func (service UserService) findUserByEmail(email string) (*domain.User, error) {
 	//Perform some db operation and bussiness logic
 	return nil, nil
