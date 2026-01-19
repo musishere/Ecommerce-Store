@@ -17,6 +17,12 @@ type Auth struct {
 	Secret string
 }
 
+func SetUpAuth(s string) Auth {
+	return Auth{
+		Secret: s,
+	}
+}
+
 func (secret Auth) CreateHashedPassword(password string) (string, error) {
 	if len(password) < 6 {
 		return "", errors.New("password must be at least 6 characters")
@@ -64,33 +70,69 @@ func (secret Auth) VerifyPassword(password string, hashedPassword string) error 
 	return nil
 }
 
-func (secret Auth) VerifyToken(token string) (domain.User, error) {
-	t := strings.Split(token, "")
-	if len(t) != 2 {
-		return domain.User{}, errors.New("Invalid token")
+func (secret Auth) VerifyToken(authHeader string) (domain.User, error) {
+	parts := strings.SplitN(authHeader, " ", 2)
+	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+		return domain.User{}, errors.New("invalid authorization header")
 	}
 
-	tokenStr := t[0]
-	if tokenStr != "Bearer" {
-		return domain.User{}, errors.New("Invalid token")
-	}
+	tokenStr := parts[1]
 
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+	claims := jwt.MapClaims{}
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
-
 		return []byte(secret.Secret), nil
 	})
 
-	if err != nil {
-		log.Println(err)
+	if err != nil || !token.Valid {
+		return domain.User{}, errors.New("invalid token")
 	}
-	return domain.User{}, nil
+
+	userID, ok := claims["user_id"].(float64)
+	if !ok {
+		return domain.User{}, errors.New("invalid user_id claim")
+	}
+
+	email, ok := claims["email"].(string)
+	if !ok {
+		return domain.User{}, errors.New("invalid email claim")
+	}
+
+	userType, ok := claims["type"].(string)
+	if !ok {
+		return domain.User{}, errors.New("invalid type claim")
+	}
+
+	return domain.User{
+		ID:       uint(userID),
+		Email:    email,
+		UserType: userType,
+	}, nil
 }
 
-func (secret Auth) Authorize(ctx *fiber.Ctx) {}
+func (secret Auth) Authorize(ctx *fiber.Ctx) error {
+	token := ctx.Get("Authorization")
+
+	if token == "" {
+		return fiber.ErrUnauthorized
+	}
+
+	user, err := secret.VerifyToken(token)
+	if err != nil {
+		log.Println(err)
+		return fiber.ErrUnauthorized
+	}
+
+	// optionally store user in context
+	ctx.Locals("user", user)
+
+	return ctx.Next()
+}
 
 func (secret Auth) GetCurrentUser(ctx *fiber.Ctx) domain.User {
-	return domain.User{}
+	user := ctx.Locals("user")
+
+	return user.(domain.User)
 }
